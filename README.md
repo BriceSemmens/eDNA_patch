@@ -1,10 +1,7 @@
 
 ---
-Intercalibration eDNA modeling methods
-Brice Semmens
-2024-12-06
+Marine Mammal eDNA patch occupancy modeling 
 ---
-
 
 
 ## Modeling Approach for Marine Mammal eDNA Detection
