@@ -1,3 +1,14 @@
+library(MCMCvis)
+library(boot)
+library(tidyverse)
+library(mcmcplots)
+library(ggplot2)
+library(ggdist)
+library(dplyr)
+library(tidyr)
+library(viridis)
+library(patchwork)
+
 # Import the CSV file
 mm.data <- read.csv("intercal_DL_metadata_111224-noCs_NEW.csv")# Import the CSV file
 
@@ -110,92 +121,139 @@ edna_code_vol_depth_meth_randCap.run <- nimbleMCMC(code = edna_code_vol_depth_me
                                        constants = constants, 
                                        data = data, 
                                        inits = inits,
-                                       niter = 2000000, 
-                                       nburnin = 100000, 
+                                       niter = 200000, 
+                                       nburnin = 10000, 
                                        thin = 100, 
                                        nchains = 3,
                                        summary=TRUE,
                                        samplesAsCodaMCMC = TRUE,
                                        WAIC = TRUE)
 
-# Gelman-Rubin diagnostic (AKA RHat or PSRF)
+# Gelman-Rubin diagnostic
 MCMCsummary(edna_code_vol_depth_meth_randCap.run$samples)
 
-# Visualize all of the relevant plots at the same time:
+# Visualize MCMC chains
 mcmcplot(edna_code_vol_depth_meth_randCap.run$samples)
 
-#put posteriors into the work environment
+# --- Posterior analysis and plotting ---
 attach.nimble(edna_code_vol_depth_meth_randCap.run$samples)
+n.post <- length(b_depth)
 
+# --- Define sequences for depth and volume ---
+depth_min <- min(as.numeric(biosamp_dat$Depth_m))
+depth_max <- max(as.numeric(biosamp_dat$Depth_m))
+n_depth_steps <- 100
+depth_seq <- seq(from = depth_min, to = depth_max, length.out = n_depth_steps)
 
-library(ggplot2)
-library(boot)
+vol_min <- min(as.numeric(biosamp_dat$Volume_filt_mL))
+vol_max <- max(as.numeric(biosamp_dat$Volume_filt_mL))
+n_vol_steps <- 100
+vol_seq <- seq(from = vol_min, to = vol_max, length.out = n_vol_steps)
 
-n.post<-length(b_depth) #get number of posterior draws
+# --- Calculate predicted probabilities ---
+plot.stor2 <- matrix(data = NA, n.post, length(depth_seq))
+plot.stor <- matrix(data = NA, n.post, length(vol_seq))
 
-# Plot the linear relationship between capture probability and volume filtered
-
-plot.stor<-matrix(data=NA,n.post,100) #make for work
-# Create a range of depth values for samples (assuming standardized values)
-vol_seq <- seq(min(biosamp_Volume_filt_mL), max(biosamp_Volume_filt_mL), length.out = 100)
-for (i in 1:100){
-  for (j in 1:n.post){
-    plot.stor[j,i]<- inv.logit(b_meth[j,2]+ b_vol[j]*vol_seq[i])
+for (i in 1:length(depth_seq)) {
+  for (j in 1:n.post) {
+    plot.stor2[j, i] <- inv.logit(b_meth[j,2] + b_depth[j] * (depth_seq[i]-mean(as.numeric(biosamp_dat$Depth_m))))
   }
 }
-cap_prob_mean <- apply( plot.stor, 2, function(x) quantile(x, 0.5))
-cap_prob_lower<- apply( plot.stor, 2, function(x) quantile(x, 0.10))
-cap_prob_upper<- apply( plot.stor, 2, function(x) quantile(x, 0.90))
 
-plot_data <- data.frame(
-  vol.Filtered = (vol_seq+mean(as.numeric(biosamp_dat$Volume_filt_mL))),
-  CaptureProbMean = cap_prob_mean,
-  CaptureProbLower = cap_prob_lower,
-  CaptureProbUpper = cap_prob_upper
+for (i in 1:length(vol_seq)) {
+  for (j in 1:n.post) {
+    plot.stor[j, i] <- inv.logit(b_meth[j,2] + b_vol[j] * (vol_seq[i]-mean(as.numeric(biosamp_dat$Volume_filt_mL))))
+  }
+}
+
+# --- Create plot data frames ---
+plot_data_lineribbon_depth <- data.frame(
+  x_value = rep(depth_seq, each = n.post),
+  value = as.vector(plot.stor2)
 )
 
-p <- ggplot(plot_data, aes(x = vol.Filtered)) +
-  geom_line(aes(y = CaptureProbMean), color = "blue") +
-  geom_ribbon(aes(ymin = CaptureProbLower, ymax = CaptureProbUpper), fill = "grey", alpha = 0.5) +
-  labs(x = "Volume filtered", y = "Probability of Capture") +
-  theme_minimal() +
-  ggtitle("Relationship Between Probability of Capture and Volume Filtered")
+plot_data_lineribbon_vol <- data.frame(
+  x_value = rep(vol_seq, each = n.post),
+  value = as.vector(plot.stor)
+)
 
-# Print the plot
+# --- Create plots ---
+p2 <- ggplot(plot_data_lineribbon_depth, aes(x = x_value, y = value)) +
+  stat_lineribbon(aes(y = value), alpha = 0.25, fill = "#808080", color = "#000000", .width = c(0.25, 0.5, 0.75)) +
+  labs(x = "Depth Sampled", y = "Probability of Capture", title = "Probability of Capture Covariates") +
+  theme_minimal()
+
+p1 <- ggplot(plot_data_lineribbon_vol, aes(x = x_value, y = value)) +
+  stat_lineribbon(aes(y = value), alpha = 0.25, fill = "#808080", color = "#000000", .width = c(0.25, 0.5, 0.75)) +
+  labs(x = "Volume Sampled", y = "Probability of Capture") +
+  theme_minimal()
+
+# --- Combine plots ---
+combined_data <- rbind(
+  data.frame(variable = "Depth (m)", plot_data_lineribbon_depth),
+  data.frame(variable = "Volume Filtered (mL)", plot_data_lineribbon_vol)
+)
+
+p <- ggplot(combined_data, aes(x = x_value, y = value)) +
+  stat_lineribbon(aes(y = value), alpha = 0.25, fill = "#808080", color = "#000000", .width = c(0.25, 0.5, 0.75)) +
+  facet_wrap(~ variable, scales = "free_x", nrow = 2) +
+  labs(x = "", y = "Probability of Capture", title = "Prob. of Capture Covariates") +
+  theme_minimal()
+
 print(p)
 
-# Plot the linear relationship between capture probability and depth of sample
+# Let's print the probabilities of capture, detection and occurrence -- all in one plot
 
-plot.stor2<-matrix(data=NA,n.post,100) #make for work
-# Create a range of depth values for samples (assuming standardized values)
-depth_seq <- seq(min(biosamp_depth_Depth_m), max(biosamp_depth_Depth_m), length.out = 100)
-for (i in 1:100){
-  for (j in 1:n.post){
-    plot.stor2[j,i]<- inv.logit(b_meth[j,2]+ b_depth[j]*depth_seq[i])
-  }
-}
-cap_prob_mean2 <- apply( plot.stor2, 2, function(x) quantile(x, 0.5))
-cap_prob_lower2<- apply( plot.stor2, 2, function(x) quantile(x, 0.10))
-cap_prob_upper2<- apply( plot.stor2, 2, function(x) quantile(x, 0.90))
+# --- Plot 1: RREAS vs. GEMCAP ---
+gemcap.detect <- as.numeric(inv.logit(cap_prob_hat))
+rreas.detect <- as.numeric(inv.logit(b_meth[,2] + cap_prob_hat))
 
-plot_data2 <- data.frame(
-  depth.samp = (depth_seq+mean(as.numeric(biosamp_dat$Depth_m))),
-  CaptureProbMean = cap_prob_mean2,
-  CaptureProbLower = cap_prob_lower2,
-  CaptureProbUpper = cap_prob_upper2
-)
+df_detect <- data.frame(GEMCAP = gemcap.detect, RREAS = rreas.detect) %>%
+  pivot_longer(cols = everything(), names_to = "Method", values_to = "Probability")
 
-p2 <- ggplot(plot_data2, aes(x = depth.samp)) +
-  geom_line(aes(y = CaptureProbMean), color = "blue") +
-  geom_ribbon(aes(ymin = CaptureProbLower, ymax = CaptureProbUpper), fill = "grey", alpha = 0.5) +
-  labs(x = "Depth Sampled", y = "Probability of Capture") +
-  theme_minimal() +
-  ggtitle("Relationship Between Probability of Capture and Water Sample Depth (m)")
+medians_detect <- df_detect %>%
+  group_by(Method) %>%
+  summarize(Median = median(Probability))
 
-# Print the plot
-print(p2)
+viridis_cols <- viridis(2, begin = 0.3, end = 0.7)
+names(viridis_cols) <- c("GEMCAP", "RREAS")
 
-# now let's plot the difference in RREAS and GEMCAP capture prob for average depth and volume
-gemcap.detect<-inv.logit(cap_prob_hat)
-rreas.detect<-inv.logit(b_meth[,2]+ cap_prob_hat)
-boxplot(cbind(gemcap.detect,rreas.detect))
+p1 <- ggplot(df_detect, aes(x = Probability, fill = Method, color = Method)) +
+  geom_histogram(aes(y = after_stat(density)), alpha = 0.3, position = "identity", bins = 30) +
+  geom_density(size = 1.2) +
+  geom_vline(data = medians_detect, aes(xintercept = Median, color = Method), linetype = "dashed", size = 1) +
+  annotate("text", x = Inf, y = Inf, label = names(viridis_cols), color = viridis_cols, hjust = 1.1, vjust = c(3, 4.5), size = 5) +
+  scale_fill_viridis(discrete = TRUE, alpha = 0.3, begin = 0.3, end = 0.7) +
+  scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.7) +
+  labs(x = "Capture Probability", y = "Density", title = "RREAS vs. GEMCAP") +
+  theme_bw() + theme(panel.grid = element_blank(), legend.position = "none")
+p1 <- p1 + scale_x_continuous(limits = c(0, 1)) # Set x-axis limits
+
+# --- Plot 2: Probability of Occurrence ---
+df_prob_occurrence <- data.frame(Occurrence = as.numeric(prob_occurrence))
+
+p2 <- ggplot(df_prob_occurrence, aes(x = Occurrence)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 30, fill = "grey70", color = "black", alpha = 0.6) +
+  geom_density(color = viridis(1), size = 1) +
+  geom_vline(xintercept = median(prob_occurrence), linetype = "dashed", color = "black", size = 1) +
+  annotate("text", x = median(prob_occurrence), y = Inf, label = paste("Median =", round(median(prob_occurrence), 3)), vjust = 1.5, hjust = -0.1, color = "black") +
+  labs(x = "Probability of Occurrence", y = "Density", title = "Probability of Occurrence") +
+  theme_bw() + theme(panel.grid = element_blank())
+p2 <- p2 + scale_x_continuous(limits = c(0, 1)) # Set x-axis limits
+
+# --- Plot 3: Probability of Detection (given occurrence) ---
+df_prob_detection <- data.frame(Probability = as.numeric(prob_detection))
+
+p3 <- ggplot(df_prob_detection, aes(x = Probability)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 30, fill = "grey70", color = "black", alpha = 0.6) +
+  geom_density(color = viridis(1), size = 1) +
+  geom_vline(xintercept = median(prob_detection), linetype = "dashed", color = "black", size = 1) +
+  annotate("text", x = median(prob_detection), y = Inf, label = paste("Median =", round(median(prob_detection), 3)), vjust = 1.5, hjust = -0.1, color = "black") +
+  labs(x = "Probability of Detection", y = "Density", title = "Probability of Detection") +
+  theme_bw() + theme(panel.grid = element_blank())
+p3 <- p3 + scale_x_continuous(limits = c(0, 1)) # Set x-axis limits
+
+# Combine the plots using patchwork - Probability of Detection at the bottom
+combined_plot <- p1 / p3 / p2
+
+print(combined_plot)
