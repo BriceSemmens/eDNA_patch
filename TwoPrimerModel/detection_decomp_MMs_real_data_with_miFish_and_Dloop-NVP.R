@@ -12,6 +12,8 @@ library(nimble)
 
 setwd("/Users/nastassiapatin/GitHub/eDNA_patch/TwoPrimerModel")
 
+# Open "attach.nimble_v2.R" and run it to source the function
+
 # Import the CSV file
 mm.data <- read.csv("intercal_ALL_metadata_12.30.24-noCs_NEW.csv")
 
