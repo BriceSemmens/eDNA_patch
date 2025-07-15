@@ -1,14 +1,19 @@
-
 ---
 Marine mammal eDNA site occupancy, capture and detection probabilities estimated from an intensively replicated ship-based survey
 ---
 
-
-
 # Abstract
 
-Environmental DNA (eDNA) sampling holds great potential as a non-invasive method for species detection and marine biodiversity monitoring. However, eDNA monitoring strategies are limited by a paucity of quantitative studies that estimate detection probabilities for target taxa aross the various levels of study design (e.g. sample sites, biological replicates, technical replicates).  In this study, we appled multi-level occupancy modeling techniques to data from a ship-based marine mammal eDNA survey. Over a 8 day cruise, we surveyed 16 sites by collecting and filtering multiple Niskin bottle water samples (biological replicates) of various volumes and at various depths (including replicate biological samples at each depth) at each site. Each filter was subsequenlty processed using a Dloop metabarcoding laboratory workflow, including 3 technical replicates per sample, to detect marine mammal taxa. Using the resulting sequence data, our quantitative framework estimates 1) eDNA detection probabilities associated with technical replication, 2) capture probabilities associated with biological sample replication, and as a function of water volume filtered and sample depth, and 3) the probability of marine mammal eDNA site occupancy. We found a weak positive effect of water volume and weakly negative effect of sample depth on biological sample capture probability. On average, both per-sample capture/replicate detection probabilities were below 50%. Conversely, the model-estimated occurrence of marine mammal eDNA at any given site approached 100%. The near-ubiquitous presence of detectable eDNA across sampling sites indicates great potential for eDNA monitoring applications once survey design and replication are appropriately tuned.
+Environmental DNA (eDNA) sampling holds great potential as a non-invasive method for species detection and marine biodiversity monitoring. However, eDNA monitoring strategies are limited by a paucity of quantitative studies that estimate detection probabilities for target taxa across the various levels of study design (e.g. sample sites, biological replicates, technical replicates). In this study, we applied multi-level occupancy modeling techniques to data from a ship-based marine mammal eDNA survey. Over an 8 day cruise, we surveyed 16 sites by collecting and filtering multiple Niskin bottle water samples (biological replicates) of various volumes and at various depths (including replicate biological samples at each depth) at each site. Each filter was subsequently processed using both D-loop and MiFish metabarcoding laboratory workflows, including multiple technical replicates per sample, to detect marine mammal taxa. Using the resulting sequence data, our quantitative framework compares two alternative model formulations to estimate 1) eDNA detection probabilities associated with technical replication and primer choice, 2) capture probabilities associated with biological sample replication as a function of water volume filtered, sample depth, and collection method, and 3) the probability of marine mammal eDNA site occupancy. We found weak positive effects of water volume and collection method on biological sample capture probability. The analysis compares models where depth affects either capture probability or occupancy probability directly, providing insights into the ecological interpretation of depth effects in eDNA sampling. Model comparison using WAIC indicates whether site×depth-specific occupancy states better explain the data than simpler site-level occupancy. On average, both per-sample capture and detection probabilities were below 50%, while model-estimated occurrence of marine mammal eDNA approached 100% across sampling sites. The near-ubiquitous presence of detectable eDNA across sampling sites indicates great potential for eDNA monitoring applications once survey design and replication are appropriately tuned.
 
+# Repository Structure
+
+The main analysis is contained in:
+- **`detection_decomp_MMs_real_data_with_miFish_and_NCOG_depthAndSiteCombo.R`**: Primary analysis script implementing both model formulations with clean NIMBLE code and comprehensive model comparison
+
+Supporting files:
+- **`detection_decomp_MMs_real_data_with_miFish_and_NCOG.R`**: Earlier version with original model formulation (retained for reference)
+- **`intercal_ALL_metadata_12.30.24-noCs_NEW.csv`**: Input data file containing eDNA detection results and sampling metadata
 
 # Introduction
 
@@ -16,98 +21,121 @@ Environmental DNA (eDNA) is an emerging tool for monitoring marine biodiversity,
 
 In recent years, the application of eDNA techniques has expanded rapidly, with studies demonstrating its effectiveness in detecting rare, elusive, and threatened marine mammal species [@baker2018; @parsons2018]. However, while the potential of eDNA for marine mammal monitoring has been established, quantitative estimates of occurrence rates and capture and detection probabilities have remained largely unexplored. This gap in knowledge has limited the ability of researchers to fully leverage eDNA as a tool for marine mammal population assessment and management [@goldberg2016].
 
-Method details and approach here. 
-
-
 ## Modeling Approach for Marine Mammal eDNA Detection
 
-Our eDNA monitoring involved 16 fixed sampling sites, each surveyed using two distinct water collection methods: RREAS, which collected three separate biological replicates per site, and GEMCAP, which collected a single biological replicate per site. Each biological replicate was then subsampled into three technical replicates analyzed for the presence of marine mammal DNA. Thus, the data structure included three nested levels: (1) site-level occurrence of marine mammal eDNA, (2) method- and site-specific probabilities of capturing eDNA within a given biological replicate (conditional on presence), and (3) technical replicate-level probabilities of detecting eDNA (conditional on capture).
+Our eDNA monitoring involved 16 fixed sampling sites, each surveyed using multiple water collection methods (GEMCAP, RREAS) with varying numbers of biological replicates per site and method. Each biological replicate was collected at specific depths and volumes, then processed using two primer systems (D-loop and MiFish) with multiple technical replicates analyzed for the presence of marine mammal DNA. This nested sampling design creates a complex hierarchical structure requiring specialized analytical approaches.
 
-We developed a hierarchical Bayesian model to account for the complex sampling design of our environmental DNA (eDNA) marine mammal monitoring program. The model explicitly accounts for multiple sources of variation and detection uncertainty across biological and technical replicates, sampling methods, and sites.
+We developed two alternative hierarchical Bayesian model formulations implemented in NIMBLE to account for the complex sampling design and compare different ecological hypotheses about how environmental factors affect eDNA detection:
 
-Data Simulation for Model Validation
-Prior to fitting the model to empirical data, we developed a data simulation procedure to validate model performance and verify parameter identifiability. The simulation code, written in R, generated synthetic data consistent with our sampling design and hypothesized data-generating process. Specifically, we first specified a known occurrence probability for marine mammal eDNA across sites. For each site, we then simulated a site-level occurrence state. Given occurrence, we simulated the biological replicate capture process by assigning capture probabilities on the logit scale, incorporating fixed effects of volume filtered and depth of sampling (both standardized), as well as a site-specific random effect and a fixed effect for the sampling method. Finally, given capture within a biological replicate, we simulated the detection process at the technical replicate level using a single detection probability parameter.
+### Model 1: Original Single Occupancy Model
 
+This model treats each site as having a single occupancy state and models depth as affecting capture probability:
 
-### Hierarchical Model Structure
+**Ecological Interpretation**: Marine mammals either occur or don't occur at a site (binary site-level occupancy). Depth affects how likely you are to detect eDNA given the animals are present (e.g., deeper water might make eDNA harder to capture due to dilution effects).
 
-The model can be represented by the following hierarchical probability structure:
+**Model Structure**:
+1. **Site-Level Occurrence**: Single global occurrence probability for all sites
+   ```
+   site_occurrence[s] ~ Bernoulli(prob_occurrence)
+   ```
 
-1. **Site-Level Occurrence**
-   The presence of marine mammals at site $s$ is modeled as a Bernoulli random variable:
+2. **Biological Replicate Capture**: Depth affects capture probability
+   ```
+   logit(prob_capture[b]) = cap_prob_logit[site] + b_depth × depth + b_vol × volume + b_meth[method]
+   bio_capture[b] ~ Bernoulli(site_occurrence[site] × prob_capture[b])
+   ```
 
-   $Z_s \sim \text{Bernoulli}(\psi)$
+3. **Technical Replicate Detection**: Primer-specific detection probabilities
+   ```
+   Y[i] ~ Bernoulli(bio_capture[biosample] × prob_detection[primer])
+   ```
 
-   where $Z_s$ is the site-level occurrence indicator, and $\psi$ is the overall occurrence probability, drawn from a Beta prior:
+### Model 2: Site×Depth Occupancy Model
 
-   $\psi \sim \text{Beta}(1,1)$
+This model creates unique occupancy states for each site-depth combination and models depth as affecting occupancy probability:
 
-2. **Biological Replicate Capture**
-   The logit-linear model for biological replicate capture probability is:
+**Ecological Interpretation**: Marine mammals have different probabilities of being present at different depths within the same site. Depth affects the fundamental occupancy probability, recognizing that animals may prefer certain depth ranges and be absent from others.
 
-   $\text{logit}(p_{\text{capture},b}) = \beta_0 + \beta_{\text{vol}} \cdot X_{\text{vol},b} + \beta_{\text{depth}} \cdot X_{\text{depth},b} + \gamma_{s[b]} + \delta_{\text{method}[b]}$
+**Model Structure**:
+1. **Site×Depth-Level Occurrence**: Depth affects occupancy probability
+   ```
+   logit(prob_site_depth_occurrence[i]) = intercept + b_depth_occ × site_depth_depths[i]
+   site_depth_occurrence[i] ~ Bernoulli(prob_site_depth_occurrence[i])
+   ```
 
-   Where:
-   - $p_{\text{capture},b}$ is the capture probability for biological replicate $b$
-   - $\beta_0$ is the intercept (site-level capture probability hyperparameter)
-   - $\beta_{\text{vol}}$ is the volume coefficient
-   - $\beta_{\text{depth}}$ is the depth coefficient
-   - $X_{\text{vol},b}$ is the centered water volume
-   - $X_{\text{depth},b}$ is the centered sampling depth
-   - $\gamma_{s[b]}$ is the site-specific random effect
-   - $\delta_{\text{method}[b]}$ is the method-specific fixed effect, with method effects constrained such that:
-   $\delta_{\text{GEMCAP}} = 0$ and 
-   $\delta_{\text{RREAS}} \sim \text{Normal}(0, 1.7)$
-   
-   
-    The $\delta_{\text{method}[b]}$ parameterization ensures that the GEMCAP method serves as the reference level, with the RREAS method's effect estimated relative to GEMCAP.
+2. **Biological Replicate Capture**: No depth effect (depth already modeled in occupancy)
+   ```
+   logit(prob_capture[b]) = cap_prob_logit_site[site] + b_vol × volume + b_meth[method]
+   bio_capture[b] ~ Bernoulli(site_depth_occurrence[site_depth_combo] × prob_capture[b])
+   ```
 
-   The biological replicate capture is then modeled as:
+3. **Technical Replicate Detection**: Same as Model 1
+   ```
+   Y[i] ~ Bernoulli(bio_capture[biosample] × prob_detection[primer])
+   ```
 
-   $Y_{\text{capture},b} \sim \text{Bernoulli}(Z_{s[b]} \cdot p_{\text{capture},b})$
+### Data Simulation for Model Validation
 
-3. **Technical Replicate Detection**
-   Conditional on biological replicate capture, technical replicates are modeled as:
+Prior to fitting models to empirical data, we developed data simulation procedures to validate model performance and verify parameter identifiability. The simulation code generates synthetic data consistent with our sampling design and hypothesized data-generating processes, allowing us to test whether our models can recover known parameter values.
 
-   $Y_{\text{detect},i} \sim \text{Bernoulli}(p_{\text{detect}} \cdot Y_{\text{capture},b[i]})$
+### Model Implementation and Comparison
 
-   where $p_{\text{detect}}$ is the detection probability, drawn from a Beta prior:
+Both models are implemented using clean NIMBLE code with proper initialization functions to eliminate warnings and ensure reliable convergence. Key improvements in the main analysis script include:
 
-   $p_{\text{detect}} \sim \text{Beta}(1,1)$
+- **Robust initialization**: Functions that ensure latent states are consistent with observed data
+- **Clean constants**: Removal of unused variables that caused NIMBLE warnings  
+- **Complete parameterization**: All model parameters properly initialized and constrained
+- **Model comparison**: WAIC-based comparison to determine which model formulation better fits the data
 
 ### Prior Distributions
 
 We specified weakly informative priors for model parameters:
 
-- Volume and depth coefficients: $\beta_{\text{vol}}, \beta_{\text{depth}} \sim \text{Normal}(0, 1.7)$
-- Method effects: $\delta_{\text{method}} \sim \text{Normal}(0, 1.7)$
-- Site-level random effects: $\gamma_s \sim \text{Normal}(\beta_0, \sigma_{\text{cap}})$
-- Site-level capture probability hyperparameter: $\beta_0 \sim \text{Normal}(0, 1.7)$
-- Site-level random effect standard deviation: $\sigma_{\text{cap}} \sim \text{Exponential}(1)$
+- Volume and depth coefficients: `Normal(0, 1)`
+- Method effects: `Normal(0, 1.7)` with GEMCAP as reference (fixed at 0)
+- Site-level random effects: `Normal(cap_prob_hat, cap_prob_SD)`
+- Capture probability hyperparameters: `cap_prob_hat ~ Normal(0, 1.7)`, `cap_prob_SD ~ Exponential(1)`
+- Occurrence probability: `Beta(1, 1)`
+- Detection probabilities: `Beta(1, 1)` for each primer type
 
 ### Inference
 
-We used Markov Chain Monte Carlo (MCMC) sampling to estimate posterior distributions of model parameters:
+MCMC sampling parameters:
 - 3 parallel chains 
-- 20,000 total iterations
+- 200,000 total iterations
 - 10,000 iterations discarded as burn-in
-- Thinning interval of 10
+- Thinning interval of 100
+- Final posterior samples: 5,700 per chain (17,100 total)
 
-Model performance and parameter estimates were assessed using posterior summaries, trace plots, and the Widely Applicable Information Criterion (WAIC).
+Model performance assessed using:
+- Posterior summaries and convergence diagnostics (R̂, effective sample size)
+- Trace plots and autocorrelation diagnostics
+- WAIC for model comparison
+- Posterior predictive checks
+
+### Key Research Questions
+
+1. **Method Effects**: How do different collection methods (GEMCAP vs. RREAS) affect eDNA capture probability?
+
+2. **Volume Effects**: Does filtering larger volumes of water increase capture probability?
+
+3. **Depth Effects**: Does sample depth affect eDNA detectability, and is this effect better modeled as affecting occupancy or capture probability?
+
+4. **Primer Performance**: How do D-loop and MiFish primers compare in their detection probabilities?
+
+5. **Model Selection**: Which model structure (single occupancy vs. site×depth occupancy) better explains the observed eDNA detection patterns?
 
 ## Results
 
-Plots from modeling code etc. go here. Plots need cleanup and fanciness first. 
+The analysis provides quantitative estimates of detection probabilities across all levels of the sampling hierarchy, with model comparison indicating whether environmental stratification (depth) is better incorporated at the occupancy or capture level. Detailed results including posterior distributions, effect sizes, and model comparison metrics are generated by the main analysis script.
 
 ## Discussion
 
-Our study presents a novel approach to addressing this knowledge gap by employing advanced occupancy modeling techniques to estimate occurrence rates and detection probabilities associated with an intensive, ship-based marine mammal eDNA sampling survey [@mackenzie2002; @schmidt2013]. The results of our analysis reveal a striking finding: the model-estimated occurrence of marine mammal eDNA at any given site approaches 100%. This remarkable outcome suggests that eDNA sampling has the potential to detect even the rarest of marine organisms, offering unprecedented sensitivity in biodiversity monitoring [@ficetola2015].
+Our study presents a novel approach to addressing knowledge gaps in eDNA monitoring by employing advanced occupancy modeling techniques to estimate occurrence rates and detection probabilities from an intensive, ship-based marine mammal eDNA sampling survey [@mackenzie2002; @schmidt2013]. The comparison of two alternative model formulations provides insights into the ecological mechanisms underlying eDNA detection patterns and optimal sampling strategies.
 
-By providing quantitative estimates of occurrence and detection probabilities, our study not only enhances the reliability of eDNA-based marine mammal monitoring but also establishes a strong case for its widespread adoption in marine conservation efforts [@bohmann2014]. The near-ubiquitous presence of detectable eDNA signals across sampling sites indicates that this method could revolutionize our ability to track and protect marine mammal populations, including those that are critically endangered or traditionally difficult to observe [@sigsgaard2017].
+By providing quantitative estimates of occurrence and detection probabilities across multiple levels of sampling hierarchy, our study enhances the reliability of eDNA-based marine mammal monitoring and establishes frameworks for optimizing survey design [@bohmann2014]. The model comparison approach demonstrates how different ecological hypotheses can be formally tested using hierarchical modeling, advancing both the statistical methodology and biological understanding of eDNA detection processes.
 
 Furthermore, our research demonstrates the power of integrating eDNA analysis with sophisticated statistical modeling, paving the way for more comprehensive and accurate assessments of marine ecosystems [@lacoursiere-roussel2016]. This approach addresses key challenges in marine mammal monitoring, such as imperfect detection and the need for cost-effective, large-scale surveillance methods [@chambert2018].
-
-eDNA monitoring represents a transformative tool in marine conservation, capable of providing unprecedented insights into the distribution and abundance of marine mammals [@taberlet2018]. The quantitative framework presented in this paper offers a robust foundation for future research and management strategies, potentially reshaping our approach to marine biodiversity assessment and conservation planning [@cristescu2018].
 
 ## References
 
