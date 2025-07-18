@@ -10,6 +10,8 @@ library(viridis)
 library(patchwork)
 library(nimble)
 
+source("./Scripts/attach.nimble_v2.R")
+
 # Import the CSV file
 mm.data <- read.csv("intercal_ALL_metadata_12.30.24-noCs_NEW.csv")
 
