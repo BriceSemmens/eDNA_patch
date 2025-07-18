@@ -12,8 +12,8 @@ The main analysis is contained in:
 - **`detection_decomp_MMs_real_data_with_miFish_and_NCOG_depthAndSiteCombo.R`**: Primary analysis script implementing both model formulations with clean NIMBLE code and comprehensive model comparison
 
 Supporting files:
-- **`detection_decomp_MMs_real_data_with_miFish_and_NCOG.R`**: Earlier version with original model formulation (retained for reference)
-- **`intercal_ALL_metadata_12.30.24-noCs_NEW.csv`**: Input data file containing eDNA detection results and sampling metadata
+- **`./Archive/detection_decomp_MMs_real_data_with_miFish_and_NCOG.R`**: Earlier version with original model formulation (retained for reference)
+- **`./Data/intercal_ALL_metadata_12.30.24-noCs_NEW.csv`**: Input data file containing eDNA detection results and sampling metadata
 
 # Introduction
 
