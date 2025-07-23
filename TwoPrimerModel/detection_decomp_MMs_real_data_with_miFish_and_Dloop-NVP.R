@@ -10,12 +10,12 @@ library(viridis)
 library(patchwork)
 library(nimble)
 
-setwd("/Users/nastassiapatin/GitHub/eDNA_patch/TwoPrimerModel")
+setwd("/Users/nastassiapatin/GitHub/eDNA_patch/")
 
 # Open "attach.nimble_v2.R" and run it to source the function
 
 # Import the CSV file
-mm.data <- read.csv("intercal_ALL_metadata_12.30.24-noCs_NEW.csv")
+mm.data <- read.csv("Data/intercal_ALL_metadata_07.23.25.csv")
 
 # remove the underway sample data from this analysis
 mm.data <- mm.data[mm.data$Collection_method != "UW", ]
@@ -50,7 +50,7 @@ n_biosamples <- length(unique(mm.data$unique_biorep_numeric))
 n_methods <- length(unique(mm.data$Collection_method_numeric ))
 n_primers <- length(unique(mm.data$Primer_numeric))
 
-Y <- mm.data$delphinus_all #HEY YOU! THIS IS DELPHINIDAE ONLY. IF YOU WANT ALL MMS, CHANGE.
+Y <- mm.data$delphinus_all #HEY YOU! THIS IS DELPHINUS SPP ONLY. IF YOU WANT ALL MMS, CHANGE.
 
 ## Lets do effects of water volume, depth & method capture, with site random effect  ######################################################################
 

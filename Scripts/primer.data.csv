@@ -1,0 +1,3 @@
+name,locus_shorthand,seq_f,primer_length_f,seq_r,primer_length_r,F_qual,R_qual,tapestation_amplicon_length_F,tapestation_amplicon_length_R,max_amplicon_length,min_amplicon_length,max_trim,overlap,db_name,known_hashes_name
+MFU,MFU,GCCGGTAAAACTCGTGCCAGC,21,CATAGTGGGGTATCTAATCCCAGTTTG,27,30,30,222,222,185,163,110,20,MURI_MFU.fasta,MFU_prev_hashes.csv
+DL,DL,TCACCCAAAGCTGRARTTCTA,21,GCGGGTTGCTGGTTTCACG,19,29,25,429,429,475,300,450,12,Cetacean_DL_Baker_NWFSC_NPacflt_root.fasta,DL_prev_hashes.csv

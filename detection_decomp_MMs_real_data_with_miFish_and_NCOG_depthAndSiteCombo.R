@@ -13,7 +13,7 @@ library(nimble)
 source("./Scripts/attach.nimble_v2.R")
 
 # Import the CSV file
-mm.data <- read.csv("./Data/intercal_ALL_metadata_12.30.24-noCs_NEW.csv")
+mm.data <- read.csv("./Data/intercal_ALL_metadata_07.23.25.csv")
 
 # remove the underway sample data from this analysis
 mm.data <- mm.data[mm.data$Collection_method != "UW", ]
@@ -46,7 +46,7 @@ n_biosamples<-length(unique(mm.data$uniqiue_biorep_numeric))
 n_methods<-length(unique(mm.data$Collection_method_numeric ))
 n_primers<-length(unique(mm.data$Prmer_numeric))
 
-Y<-mm.data$delphinus_all #HEY YOU! THIS IS DELPHINIDAE ONLY. IF YOU WANT ALL MMS, CHANGE.
+Y<-mm.data$delphinus_all #HEY YOU! THIS IS DELPHINUS SPP ONLY. IF YOU WANT ALL MMS, CHANGE.
 
 #############
 # ORIGINAL MODEL: Single occupancy probability with covariates on capture
