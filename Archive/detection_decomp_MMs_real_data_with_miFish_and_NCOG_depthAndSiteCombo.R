@@ -7,6 +7,7 @@ library(ggdist)
 library(dplyr)
 library(tidyr)
 library(viridis)
+library(ggokabeito)
 library(patchwork)
 library(nimble)
 
@@ -24,29 +25,29 @@ mm.data <- mm.data[mm.data$Collection_method != "PF", ]
 # because I've removed some of the unique biosample reference numbers with the above 
 # methods removal, I need to renumber the unique biosamples so that they are consecutive
 # and start with 1. I do this using the factor trick. 
-mm.data$uniqiue_biorep_numeric<-as.numeric(as.factor(mm.data$uniqiue_biorep_numeric))
+mm.data$unique_biorep_numeric <- as.numeric(as.factor(mm.data$unique_biorep_numeric))
 
 # pull unique info for each bio sample (can add to these for enviro covariates)
 biosamp_dat <- mm.data %>%
-  group_by(uniqiue_biorep_numeric) %>%
+  group_by(unique_biorep_numeric) %>%
   slice(1) %>%
   ungroup()
 
 # make data, index vectors and constants for nimble work
-biosamp_station_index<- biosamp_dat$site.numeric
-biosamp_method_index<- biosamp_dat$Collection_method_numeric
-Y_biosamp_index<- mm.data$uniqiue_biorep_numeric
+biosamp_station_index <- biosamp_dat$site.numeric
+biosamp_method_index <- biosamp_dat$Collection_method_numeric
+Y_biosamp_index <- mm.data$unique_biorep_numeric
 biosamp_Volume_filt_mL <- as.numeric(biosamp_dat$Volume_filt_mL) - mean(as.numeric(biosamp_dat$Volume_filt_mL)) #centered water volumes
 biosamp_depth_Depth_m <- as.numeric(biosamp_dat$Depth_m) - mean(as.numeric(biosamp_dat$Depth_m)) #centered sample depths
-Y_primer_index<-mm.data$Prmer_numeric
+Y_primer_index <- mm.data$Primer_numeric
 
-N<-dim(mm.data)[1]
-n_sites<-length(unique(mm.data$site.numeric))
-n_biosamples<-length(unique(mm.data$uniqiue_biorep_numeric))
-n_methods<-length(unique(mm.data$Collection_method_numeric ))
-n_primers<-length(unique(mm.data$Prmer_numeric))
+N <- dim(mm.data)[1]
+n_sites <- length(unique(mm.data$site.numeric))
+n_biosamples <- length(unique(mm.data$unique_biorep_numeric))
+n_methods <- length(unique(mm.data$Collection_method_numeric ))
+n_primers <- length(unique(mm.data$Primer_numeric))
 
-Y<-mm.data$delphinus_all #HEY YOU! THIS IS DELPHINUS SPP ONLY. IF YOU WANT ALL MMS, CHANGE.
+Y <- mm.data$delphinus_all #HEY YOU! THIS IS DELPHINUS SPP ONLY. IF YOU WANT ALL MMS, CHANGE.
 
 #############
 # ORIGINAL MODEL: Single occupancy probability with covariates on capture
@@ -55,7 +56,7 @@ Y<-mm.data$delphinus_all #HEY YOU! THIS IS DELPHINUS SPP ONLY. IF YOU WANT ALL M
 # Define the original NIMBLE model (UNCHANGED)
 edna_code_vol_depth_meth_randCap <- nimbleCode({
   cap_prob_hat ~ dnorm(0,1.7) 
-  cap_prob_SD~ dexp(1)
+  cap_prob_SD ~ dexp(1)
   
   for (i in 1:n_sites) {
     # Site-level occupancy probability
@@ -149,7 +150,7 @@ edna_code_vol_depth_meth_randCap.run <- nimbleMCMC(code = edna_code_vol_depth_me
                                                    nburnin = 10000, 
                                                    thin = 100, 
                                                    nchains = 3,
-                                                   summary=TRUE,
+                                                   summary = TRUE,
                                                    samplesAsCodaMCMC = TRUE,
                                                    WAIC = TRUE)
 
@@ -248,7 +249,8 @@ print(original_4panel)
 
 # Create site-depth combinations for occupancy states
 biosamp_dat$site_depth_combo <- paste(biosamp_dat$site.numeric, 
-                                      round(biosamp_dat$Depth_m, 1), sep = "_")
+                                      round(biosamp_dat$Depth_m, 1), 
+                                      sep = "_")
 unique_site_depth <- unique(biosamp_dat$site_depth_combo)
 n_site_depth_states <- length(unique_site_depth)
 
@@ -259,11 +261,14 @@ site_depth_lookup <- data.frame(
 )
 
 # Extract site and depth for each site-depth state
-site_depth_lookup$site <- as.numeric(sapply(strsplit(site_depth_lookup$combo, "_"), `[`, 1))
-site_depth_lookup$depth <- as.numeric(sapply(strsplit(site_depth_lookup$combo, "_"), `[`, 2))
+site_depth_lookup$site <- as.numeric(sapply(strsplit(site_depth_lookup$combo, 
+                                                     "_"), `[`, 1))
+site_depth_lookup$depth <- as.numeric(sapply(strsplit(site_depth_lookup$combo, 
+                                                      "_"), `[`, 2))
 
 # Create index vector for biosamples to site-depth states
-biosamp_dat$site_depth_index <- match(biosamp_dat$site_depth_combo, site_depth_lookup$combo)
+biosamp_dat$site_depth_index <- match(biosamp_dat$site_depth_combo, 
+                                      site_depth_lookup$combo)
 biosamp_site_depth_index <- biosamp_dat$site_depth_index
 
 # Center depths for site-depth states
@@ -343,7 +348,9 @@ inits_fn_sitedepth <- function(){
   bio_capture_init[as.numeric(names(max_obs_per_biosample))] <- max_obs_per_biosample
   
   # Determine if a site-depth combo had any positive biosamples
-  site_depth_occurrence_init_raw <- tapply(bio_capture_init, biosamp_site_depth_index, max)
+  site_depth_occurrence_init_raw <- tapply(bio_capture_init, 
+                                           biosamp_site_depth_index, 
+                                           max)
   site_depth_occurrence_init <- rep(0, n_site_depth_states)
   site_depth_occurrence_init[as.numeric(names(site_depth_occurrence_init_raw))] <- site_depth_occurrence_init_raw
   
@@ -379,7 +386,8 @@ edna_site_depth_occupancy.run <- nimbleMCMC(code = edna_code_site_depth_occupanc
                                             WAIC = TRUE)
 # Diagnostics
 MCMCsummary(edna_site_depth_occupancy.run$samples)
-mcmcplot(edna_site_depth_occupancy.run$samples, parms = c("b_depth_occ", "b_vol", "intercept"))
+mcmcplot(edna_site_depth_occupancy.run$samples, 
+         parms = c("b_depth_occ", "b_vol", "intercept"))
 
 # --- Site x Depth Model 4-Panel Plot ---
 attach.nimble(edna_site_depth_occupancy.run$samples)
@@ -426,51 +434,69 @@ plot_data_capture_vol <- data.frame(
 # Method comparison
 gemcap_capture_new <- as.numeric(inv.logit(cap_prob_hat))
 rreas_capture_new <- as.numeric(inv.logit(cap_prob_hat + b_meth[,2]))
+ncog_capture_new <- as.numeric(inv.logit(cap_prob_hat + b_meth[,3]))
 
 df_methods_new <- data.frame(
   GEMCAP = gemcap_capture_new, 
-  RREAS = rreas_capture_new
+  RREAS = rreas_capture_new,
+  NCOG = ncog_capture_new
 ) %>%
-  pivot_longer(cols = everything(), names_to = "Method", values_to = "Probability")
+  pivot_longer(cols = everything(), 
+               names_to = "Method", 
+               values_to = "Probability")
 
 # Detection comparison
 df_detection_new <- data.frame(
   Probability = c(prob_detection[, 1], prob_detection[, 2]),
-  Method = rep(c("dloop", "MiFish"), each = nrow(prob_detection))
+  Method = rep(c("d-loop", "MiFish"), each = nrow(prob_detection))
 )
 
 # Create 4-panel plot for site x depth model
-p1_new <- ggplot(plot_data_occupancy_depth, aes(x = depth, y = occupancy)) +
+p1_new <- ggplot(plot_data_occupancy_depth, 
+                 aes(x = depth, y = occupancy)) +
   stat_lineribbon(alpha = 0.25, fill = "#4CAF50", color = "#2E7D32", 
                   .width = c(0.25, 0.5, 0.75)) +
   labs(x = "Depth (m)", y = "Probability of Occupancy", title = "Site x Depth: Depth Effect on Occupancy") +
   theme_minimal()
 
-p2_new <- ggplot(plot_data_capture_vol, aes(x = volume, y = capture)) +
-  stat_lineribbon(alpha = 0.25, fill = "#FF9800", color = "#F57C00", 
+p2_new <- ggplot(plot_data_capture_vol, 
+                 aes(x = volume, y = capture)) +
+  stat_lineribbon(alpha = 0.25, fill = "#EE7AE9", color = "#DA70D6", 
                   .width = c(0.25, 0.5, 0.75)) +
-  labs(x = "Volume Filtered (mL)", y = "Probability of Capture", title = "Site x Depth: Volume Effect on Capture") +
+  labs(x = "Volume Filtered (mL)", y = "Probability of Capture", 
+       title = "Site x Depth: Volume Effect on Capture") +
   theme_minimal()
 
-p3_new <- ggplot(df_methods_new, aes(x = Probability, fill = Method, color = Method)) +
-  geom_histogram(aes(y = after_stat(density)), alpha = 0.3, position = "identity", bins = 30) +
-  geom_density(size = 1.2) +
-  scale_fill_viridis(discrete = TRUE, alpha = 0.3, begin = 0.3, end = 0.7) +
-  scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.7) +
-  labs(x = "Capture Probability", y = "Density", title = "Site x Depth: RREAS vs. GEMCAP") +
-  theme_bw() + theme(panel.grid = element_blank(), legend.position = "bottom") +
+p3_new <- ggplot(df_methods_new, 
+                 aes(x = Probability, fill = Method, 
+                     color = Method)) +
+  geom_histogram(aes(y = after_stat(density)), 
+                 position = "identity", bins = 30, alpha = 0.3) +
+  geom_density(size = 1.2, alpha = 0.3) +
+  scale_fill_okabe_ito() +
+  scale_color_okabe_ito() +
+  labs(x = "Capture Probability", 
+       y = "Density", 
+       title = "Site x Depth: RREAS vs. GEMCAP vs. NCOG") +
+  theme_bw() + 
+  theme(panel.grid = element_blank(), 
+        legend.position = "bottom") +
   scale_x_continuous(limits = c(0, 1))
 
-p4_new <- ggplot(df_detection_new, aes(x = Probability, fill = Method, color = Method)) +
-  geom_histogram(aes(y = after_stat(density)), alpha = 0.3, position = "identity", bins = 30) +
+p4_new <- ggplot(df_detection_new, 
+                 aes(x = Probability, fill = Method, color = Method)) +
+  geom_histogram(aes(y = after_stat(density)), 
+                 alpha = 0.3, position = "identity", bins = 30) +
   geom_density(size = 1.2) +
   scale_fill_viridis(discrete = TRUE, alpha = 0.3, begin = 0.3, end = 0.7) +
   scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.7) +
-  labs(x = "Detection Probability", y = "Density", title = "Site x Depth: Dloop vs. MiFish") +
+  labs(x = "Detection Probability", y = "Density", 
+       title = "Site x Depth: d-loop vs. MiFish") +
   theme_bw() + theme(panel.grid = element_blank(), legend.position = "bottom") +
   scale_x_continuous(limits = c(0, 1))
 
 sitedepth_4panel <- (p1_new | p2_new) / (p3_new | p4_new)
+sitedepth_2panel <- p2_new / p3_new
 print("=== SITE x DEPTH MODEL 4-PANEL PLOT ===")
 print(sitedepth_4panel)
 

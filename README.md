@@ -9,11 +9,11 @@ Environmental DNA (eDNA) sampling holds great potential as a non-invasive method
 # Repository Structure
 
 The main analysis is contained in:
-- **`detection_decomp_MMs_real_data_with_miFish_and_NCOG_depthAndSiteCombo.R`**: Primary analysis script implementing both model formulations with clean NIMBLE code and comprehensive model comparison
+- **`detection_decomp_MMs_real_data_with_miFish_and_NCOG_depthAndSiteCombo_v2.R`**: Primary analysis script implementing both model formulations with clean NIMBLE code and comprehensive model comparison
 
 Supporting files:
-- **`./Archive/detection_decomp_MMs_real_data_with_miFish_and_NCOG.R`**: Earlier version with original model formulation (retained for reference)
-- **`./Data/intercal_ALL_metadata_12.30.24-noCs_NEW.csv`**: Input data file containing eDNA detection results and sampling metadata
+- **`./Archive/detection_decomp_MMs_real_data_with_miFish_and_NCOG_depthAndSiteCombo.R`**: Earlier version with original model formulation (retained for reference)
+- **`./Data/intercal_ALL_metadata_072325.csv`**: Input data file containing eDNA detection results and sampling metadata
 
 # Introduction
 
