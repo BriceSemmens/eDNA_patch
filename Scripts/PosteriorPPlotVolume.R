@@ -9,8 +9,8 @@ mm.volsummary <- mm.data %>%
 # Create 4-panel plot for site x depth model
 ggplot(plot_data_capture_vol, aes(x = volume, y = capture)) +
 #  geom_boxplot(data = mm.depthsummary, aes(x=Depth_round, y= PCorr, group = Depth_round)) +
-  geom_point(data = mm.data, aes(x=Volume_filt_mL, y= delphinus_all))+
-  stat_lineribbon(alpha = 0.25, fill = "#4CAF50", color = "#2E7D32", 
+  geom_point(data = mm.data, aes(x=Volume_filt_mL, y= delphinus_all), color = "gray")+
+  stat_lineribbon(alpha = 0.25, fill = "#EE7AE9", color = "#EE7AE9", 
                   .width = c(0.25, 0.5, 0.75)) +
-  labs(x = "Volume (mL)", y = "Probability of Capture", title = "Volume: Volume Effect on Capture w/ PPC") +
+  labs(x = "Volume (mL)", y = "Probability of Capture") +
   theme_minimal()
