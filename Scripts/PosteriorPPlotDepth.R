@@ -33,7 +33,7 @@ ggplot(plot_data_occupancy_depth, aes(x = depth, y = occupancy)) +
   geom_point(data = mm.depthsummary, 
              aes(x=Depth_round, y= PPos, group = Depth_round, size = N), 
              color = "gray") +
-  labs(x = "Depth (m)", title = "Site x Depth: Depth Effect on Occupancy w/ PPC") +
+  labs(x = "Depth (m)") +
   theme_minimal()
 
 ggsave(plot = last_plot(), file = "./Figures/DepthPosteriorPredCheck.png", 
