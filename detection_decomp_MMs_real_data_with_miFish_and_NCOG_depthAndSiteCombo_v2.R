@@ -47,7 +47,7 @@ n_biosamples <- length(unique(mm.data$unique_biorep_numeric))
 n_methods <- length(unique(mm.data$Collection_method_numeric ))
 n_primers <- length(unique(mm.data$Primer_numeric))
 
-Y <- mm.data$delphinus_all #HEY YOU! THIS IS DELPHINUS SPP ONLY. IF YOU WANT ALL MMS, CHANGE.
+Y <- mm.data$delphinidae_all #HEY YOU! THIS IS DELPHINIDAE ONLY. IF YOU WANT ALL MMS, CHANGE.
 
 #############
 # SITE x DEPTH MODEL: Site-depth specific occupancy states
