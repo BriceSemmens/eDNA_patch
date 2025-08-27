@@ -14,7 +14,7 @@ library(nimble)
 source("./Scripts/attach.nimble_v2.R")
 
 # Import the CSV file
-mm.data <- read.csv("./Data/intercal_ALL_metadata_07.23.25.csv")
+mm.data <- read.csv("./Data/intercal_ALL_metadata_072325.csv")
 
 # remove the underway sample data from this analysis
 mm.data <- mm.data[mm.data$Collection_method != "UW", ]
