@@ -22,9 +22,9 @@ mm.data <- mm.data[mm.data$Collection_method != "UW", ]
 # remove the passive filter sample data from this analysis
 mm.data <- mm.data[mm.data$Collection_method != "PF", ]
 
-# because I've removed some of the unique biosample reference numbers with the above 
-# methods removal, I need to renumber the unique biosamples so that they are consecutive
-# and start with 1. I do this using the factor trick. 
+# because we've removed some of the unique biosample reference numbers with the above 
+# methods removal, we need to renumber the unique biosamples so that they are consecutive
+# and start with 1. We do this using the factor trick. 
 mm.data$unique_biorep_numeric <- as.numeric(as.factor(mm.data$unique_biorep_numeric))
 
 # pull unique info for each bio sample (can add to these for enviro covariates)
@@ -47,7 +47,7 @@ n_biosamples <- length(unique(mm.data$unique_biorep_numeric))
 n_methods <- length(unique(mm.data$Collection_method_numeric ))
 n_primers <- length(unique(mm.data$Primer_numeric))
 
-Y <- mm.data$delphinidae_all #HEY YOU! THIS IS DELPHINIDAE ONLY. IF YOU WANT ALL MMS, CHANGE.
+Y <- mm.data$delphinidae_all # DELPHINIDAE ONLY
 
 #############
 # SITE x DEPTH MODEL: Site-depth specific occupancy states
@@ -254,7 +254,7 @@ df_methods_new <- data.frame(
 # Detection comparison
 df_detection_new <- data.frame(
   Probability = c(prob_detection[, 1], prob_detection[, 2]),
-  Method = rep(c("d-loop", "MiFish"), each = nrow(prob_detection))
+  Method = rep(c("D-loop", "MiFish"), each = nrow(prob_detection))
 )
 
 # Create 4-panel plot for site x depth model
@@ -296,8 +296,7 @@ p4_new <- ggplot(df_detection_new,
   geom_density(size = 1.2) +
   scale_fill_viridis(discrete = TRUE, alpha = 0.3, begin = 0.3, end = 0.7) +
   scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.7) +
-  labs(x = "Detection Probability", y = "Density", 
-       title = "Site x Depth: d-loop vs. MiFish") +
+  labs(x = "Detection Probability", y = "Density") +
   theme_bw() + theme(panel.grid = element_blank(), legend.position = "bottom") +
   scale_x_continuous(limits = c(0, 1))
 
