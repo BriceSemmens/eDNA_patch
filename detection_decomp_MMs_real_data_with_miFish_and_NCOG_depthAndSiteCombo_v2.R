@@ -195,7 +195,7 @@ MCMCsummary(edna_site_depth_occupancy.run$samples)
 mcmcplot(edna_site_depth_occupancy.run$samples, 
          parms = c("b_depth_occ", "b_vol", "intercept"))
 
-# --- Site x Depth Model 4-Panel Plot ---
+### --- Site x Depth Model Plots ---
 attach.nimble(edna_site_depth_occupancy.run$samples)
 n.post.new <- length(b_depth_occ)
 
@@ -257,15 +257,15 @@ df_detection_new <- data.frame(
   Method = rep(c("D-loop", "MiFish"), each = nrow(prob_detection))
 )
 
-# Create 4-panel plot for site x depth model
-p1_new <- ggplot(plot_data_occupancy_depth, 
+### Create plots for site x depth model
+p1 <- ggplot(plot_data_occupancy_depth, 
                  aes(x = depth, y = occupancy)) +
   stat_lineribbon(alpha = 0.25, fill = "#4CAF50", color = "#2E7D32", 
                   .width = c(0.25, 0.5, 0.75)) +
   labs(x = "Depth (m)", y = "Probability of Occupancy", title = "Site x Depth: Depth Effect on Occupancy") +
   theme_minimal()
 
-p2_new <- ggplot(plot_data_capture_vol, 
+p2 <- ggplot(plot_data_capture_vol, 
                  aes(x = volume, y = capture)) +
   stat_lineribbon(alpha = 0.25, fill = "#EE7AE9", color = "#DA70D6", 
                   .width = c(0.25, 0.5, 0.75)) +
@@ -273,7 +273,7 @@ p2_new <- ggplot(plot_data_capture_vol,
        title = "Site x Depth: Volume Effect on Capture") +
   theme_minimal()
 
-p3_new <- ggplot(df_methods_new, 
+p3 <- ggplot(df_methods_new, 
                  aes(x = Probability, fill = Method, 
                      color = Method)) +
   geom_histogram(aes(y = after_stat(density)), 
@@ -282,14 +282,13 @@ p3_new <- ggplot(df_methods_new,
   scale_fill_okabe_ito() +
   scale_color_okabe_ito() +
   labs(x = "Capture Probability", 
-       y = "Density", 
-       title = "Site x Depth: RREAS vs. GEMCAP vs. NCOG") +
+       y = "Density") +
   theme_bw() + 
   theme(panel.grid = element_blank(), 
         legend.position = "bottom") +
   scale_x_continuous(limits = c(0, 1))
 
-p4_new <- ggplot(df_detection_new, 
+p4 <- ggplot(df_detection_new, 
                  aes(x = Probability, fill = Method, color = Method)) +
   geom_histogram(aes(y = after_stat(density)), 
                  alpha = 0.3, position = "identity", bins = 30) +
@@ -300,8 +299,17 @@ p4_new <- ggplot(df_detection_new,
   theme_bw() + theme(panel.grid = element_blank(), legend.position = "bottom") +
   scale_x_continuous(limits = c(0, 1))
 
-sitedepth_4panel <- (p1_new | p2_new) / (p3_new | p4_new)
-sitedepth_2panel <- p2_new / p3_new
+ggsave("Figures/Method_capture_prob.png", p3, 
+       width = 8, height = 5, units = "in", dpi = 300)
+
+ggsave("Figures/Primer_detection_prob.png", p4, 
+       width = 8, height = 5, units = "in", dpi = 300)
+
+### Panels ###
+
+sitedepth_4panel <- (p1 | p2) / (p3 | p4)
+sitedepth_2panel <- p2 / p3
+
 print("=== SITE x DEPTH MODEL 4-PANEL PLOT ===")
 print(sitedepth_4panel)
 
