@@ -1,6 +1,5 @@
 library(MCMCvis)
 library(boot)
-library(tidyverse)
 library(mcmcplots)
 library(ggplot2)
 library(ggdist)
@@ -262,16 +261,17 @@ p1 <- ggplot(plot_data_occupancy_depth,
                  aes(x = depth, y = occupancy)) +
   stat_lineribbon(alpha = 0.25, fill = "#4CAF50", color = "#2E7D32", 
                   .width = c(0.25, 0.5, 0.75)) +
-  labs(x = "Depth (m)", y = "Probability of Occupancy", title = "Site x Depth: Depth Effect on Occupancy") +
-  theme_minimal()
+  theme_bw() +
+  labs(x = "Depth (m)", y = "Probability of Occupancy", 
+       title = "Site x Depth: Depth Effect on Occupancy")
 
 p2 <- ggplot(plot_data_capture_vol, 
                  aes(x = volume, y = capture)) +
   stat_lineribbon(alpha = 0.25, fill = "#EE7AE9", color = "#DA70D6", 
                   .width = c(0.25, 0.5, 0.75)) +
+  theme_bw() +
   labs(x = "Volume Filtered (mL)", y = "Probability of Capture", 
-       title = "Site x Depth: Volume Effect on Capture") +
-  theme_minimal()
+       title = "Site x Depth: Volume Effect on Capture")
 
 p3 <- ggplot(df_methods_new, 
                  aes(x = Probability, fill = Method, 
@@ -296,8 +296,15 @@ p4 <- ggplot(df_detection_new,
   scale_fill_viridis(discrete = TRUE, alpha = 0.3, begin = 0.3, end = 0.7) +
   scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.7) +
   labs(x = "Detection Probability", y = "Density") +
-  theme_bw() + theme(panel.grid = element_blank(), legend.position = "bottom") +
+  theme_bw() + 
+  theme(panel.grid = element_blank(), legend.position = "bottom") +
   scale_x_continuous(limits = c(0, 1))
+
+ggsave("Figures/Depth_occup_prob.png", p1, 
+       width = 8, height = 5, units = "in", dpi = 300)
+
+ggsave("Figures/Volume_capture_prob.png", p2, 
+       width = 8, height = 5, units = "in", dpi = 300)
 
 ggsave("Figures/Method_capture_prob.png", p3, 
        width = 8, height = 5, units = "in", dpi = 300)
