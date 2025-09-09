@@ -9,6 +9,7 @@ library(viridis)
 library(ggokabeito)
 library(patchwork)
 library(nimble)
+library(tibble)
 
 source("./Scripts/attach.nimble_v2.R")
 
