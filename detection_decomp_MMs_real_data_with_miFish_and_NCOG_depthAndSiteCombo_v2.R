@@ -263,16 +263,14 @@ p1 <- ggplot(plot_data_occupancy_depth,
   stat_lineribbon(alpha = 0.25, fill = "#4CAF50", color = "#2E7D32", 
                   .width = c(0.25, 0.5, 0.75)) +
   theme_bw() +
-  labs(x = "Depth (m)", y = "Probability of Occupancy", 
-       title = "Site x Depth: Depth Effect on Occupancy")
+  labs(x = "Depth (m)", y = "Probability of Occupancy")
 
 p2 <- ggplot(plot_data_capture_vol, 
                  aes(x = volume, y = capture)) +
   stat_lineribbon(alpha = 0.25, fill = "#EE7AE9", color = "#DA70D6", 
                   .width = c(0.25, 0.5, 0.75)) +
   theme_bw() +
-  labs(x = "Volume Filtered (mL)", y = "Probability of Capture", 
-       title = "Site x Depth: Volume Effect on Capture")
+  labs(x = "Volume Filtered (mL)", y = "Probability of Capture")
 
 p3 <- ggplot(df_methods_new, 
                  aes(x = Probability, fill = Method, 
