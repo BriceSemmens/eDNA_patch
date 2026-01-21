@@ -4,7 +4,7 @@ library(tidyr)
 # Import the CSV file
 mm.data <- read.csv("../Data/intercal_cetacean_detections.csv")
 
-mm.data.dl <- mm.data %>% filter(Marker == "d-loop")
+mm.data.dl <- mm.data %>% filter(Marker == "D-loop")
 
 mm.dl.wide <- mm.data.dl %>% select(!c(eDNA.Sample.ID, Marker)) %>%
   pivot_wider(names_from = Sequence.Sample.ID, values_from = Reads) %>%

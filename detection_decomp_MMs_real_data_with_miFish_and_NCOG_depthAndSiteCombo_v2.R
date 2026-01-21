@@ -14,13 +14,7 @@ library(tibble)
 source("./Scripts/attach.nimble_v2.R")
 
 # Import the CSV file
-mm.data <- read.csv("./Data/intercal_ALL_metadata_072325.csv")
-
-# remove the underway sample data from this analysis
-mm.data <- mm.data[mm.data$Collection_method != "UW", ]
-
-# remove the passive filter sample data from this analysis
-mm.data <- mm.data[mm.data$Collection_method != "PF", ]
+mm.data <- read.csv("./Data/intercal_ALL_metadata_011526.csv")
 
 # because we've removed some of the unique biosample reference numbers with the above 
 # methods removal, we need to renumber the unique biosamples so that they are consecutive
@@ -47,7 +41,8 @@ n_biosamples <- length(unique(mm.data$unique_biorep_numeric))
 n_methods <- length(unique(mm.data$Collection_method_numeric ))
 n_primers <- length(unique(mm.data$Primer_numeric))
 
-Y <- mm.data$delphinidae_all # DELPHINIDAE ONLY
+# limit detections to members of the genus Delphinus (including genus-level annotations)
+Y <- mm.data$delphinus_all 
 
 #############
 # SITE x DEPTH MODEL: Site-depth specific occupancy states
